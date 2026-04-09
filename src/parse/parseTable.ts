@@ -1,34 +1,39 @@
 import type { AssembledToken, ParsedTable, SimplePDFTextItem } from './types.js'
 
 const Y_ROW_TOLERANCE = 3
-const X_COLUMN_GAP = 20     // 같은 행 내 열 구분 간격
-const X_ZONE_GAP = 100      // 컬럼 구역을 나누는 최소 x 간격
+const X_COLUMN_GAP = 20   // 같은 행 내 열 구분 간격
+const X_ZONE_GAP = 100    // 컬럼 구역을 나누는 최소 x 간격
 
-// 토큰 x값들을 클러스터링해서 컬럼 구역 경계 계산
+/**
+ * 토큰 x값을 클러스터링해서 컬럼 구역 경계를 계산한다.
+ * 경계는 "다음 컬럼 토큰 x - 1" 로 잡아서 텍스트가 잘리지 않게 한다.
+ *
+ * 예) 토큰 x: 306, 604, 899 →
+ *   컬럼1: -∞ ~ 603
+ *   컬럼2:  603 ~ 898
+ *   컬럼3:  898 ~ +∞
+ */
 function detectColumnZones(tokens: AssembledToken[]): Array<{ xMin: number; xMax: number }> {
-    const xValues = [...new Set(tokens.map(t => t.x))].sort((a, b) => a - b)
+    const sorted = [...tokens].sort((a, b) => a.x - b.x)
 
-    // x 간격이 X_ZONE_GAP 이상이면 새 컬럼
-    const columnCenters: number[] = [xValues[0]!]
-    for (let i = 1; i < xValues.length; i++) {
-        if (xValues[i]! - xValues[i - 1]! >= X_ZONE_GAP) {
-            columnCenters.push(xValues[i]!)
+    // 토큰 x값을 X_ZONE_GAP 기준으로 클러스터링
+    const centers: number[] = []
+    for (const t of sorted) {
+        if (centers.length === 0 || t.x - centers[centers.length - 1]! >= X_ZONE_GAP) {
+            centers.push(t.x)
         }
     }
 
-    // 컬럼 경계 = 인접 컬럼 중심 사이의 중간점
-    return columnCenters.map((center, i) => {
-        const prevMid = i === 0
-            ? -Infinity
-            : (columnCenters[i - 1]! + center) / 2
-        const nextMid = i === columnCenters.length - 1
-            ? Infinity
-            : (center + columnCenters[i + 1]!) / 2
-        return { xMin: prevMid, xMax: nextMid }
-    })
+    // 경계: 다음 컬럼 시작 직전
+    return centers.map((_, i) => ({
+        xMin: i === 0 ? -Infinity : centers[i]! - 1,
+        xMax: i === centers.length - 1 ? Infinity : centers[i + 1]! - 1,
+    }))
 }
 
-// 같은 행의 텍스트를 x 간격 기준으로 열 클러스터링
+/**
+ * 같은 행의 텍스트 아이템을 x 간격 기준으로 열 클러스터링해 string[] 반환
+ */
 function clusterColumns(items: SimplePDFTextItem[]): string[] {
     const sorted = [...items].sort((a, b) => a.x - b.x)
     const columns: string[] = []
@@ -48,7 +53,9 @@ function clusterColumns(items: SimplePDFTextItem[]): string[] {
     return columns
 }
 
-// 텍스트 아이템을 y 기준으로 행 그룹핑
+/**
+ * 텍스트 아이템을 y 기준으로 행 그룹핑 (Y_ROW_TOLERANCE 허용)
+ */
 function groupByRow(items: SimplePDFTextItem[]): SimplePDFTextItem[][] {
     const rowMap = new Map<number, SimplePDFTextItem[]>()
 
@@ -70,12 +77,11 @@ export function parseTable(
 ): ParsedTable[] {
     // 1. 토큰 x값으로 컬럼 구역 감지
     const columnZones = detectColumnZones(tokens)
-
     const tables: ParsedTable[] = []
 
     // 2. 각 컬럼 구역별로 처리
     for (const zone of columnZones) {
-        // 해당 구역의 토큰만 추출 후 y 정렬
+        // 해당 구역의 토큰만 y 오름차순으로 정렬
         const zoneTokens = tokens
             .filter(t => t.x >= zone.xMin && t.x < zone.xMax)
             .sort((a, b) => a.y - b.y)
@@ -93,6 +99,7 @@ export function parseTable(
             const yStart = token.y
             const yEnd = nextToken?.y ?? Infinity
 
+            // 섹션 범위: 토큰 y 초과 ~ 다음 토큰 y 미만
             const sectionItems = zoneTextItems.filter(
                 t => t.y > yStart && t.y < yEnd
             )

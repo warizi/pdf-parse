@@ -8,6 +8,7 @@ import getPDFImage from './parse/getPDFImage.js'
 import { createResult } from './parse/createResult.js'
 import { assembleTextTokens } from './parse/utils.js'
 import { parseTable } from './parse/parseTable.js'
+import { terminateWorker } from './parse/getImageText.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 // PDF 파일을 읽어서 buffer로 변환
@@ -15,18 +16,23 @@ const buffer = fs.readFileSync(join(__dirname, './pdf-files/2026년도+4월+16�
 
 const pdf = await getPDF(buffer)
 
-const pageNum = 1
+const pageNum = 2
 
 if (pdf) {
-    const textItems: SimplePDFTextItem[] = await getPDFTextContent(pdf, pageNum)
-    const image = await getPDFImage(pdf, pageNum)
-    const textTokens = assembleTextTokens(image)
-    // console.log('이미지 테이블 텍스트 토큰:', textTokens)
+    const pages = []
 
-    const tables = parseTable(textTokens, textItems)
-    // console.log('파싱된 테이블:', tables)
+    for (let pageNum = 1
+        ; pageNum <= pdf.numPages; pageNum++) {
+        const textItems: SimplePDFTextItem[] = await getPDFTextContent(pdf, pageNum)
+        const images = await getPDFImage(pdf, pageNum)
+        const tokens = assembleTextTokens(images)
+        const table = parseTable(tokens, textItems)
 
-    createResult({images: image, tokens: textTokens, text: textItems, table: tables, pageNum})
+        pages.push({ images, tokens, text: textItems, table, pageNum })
+        await terminateWorker()
+    }
+
+    createResult(pages)
 } else {
     console.error('PDF 파일을 불러오는 데 실패했습니다.')
 }

@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import { createCanvas } from 'canvas'
 import type { AssembledToken, ParsedTable, PdfjsImageData, SimplePDFImageItem, SimplePDFTextItem } from './types.js'
 import { toRGBA } from './utils.js'
-import { terminateWorker } from './getImageText.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const RESULT_DIR = join(__dirname, '../result')
@@ -44,7 +43,15 @@ function saveParsedTablesToJSON(tables: ParsedTable[], pageNum: number) {
     fs.writeFileSync(filePath, JSON.stringify(tables, null, 2))
 }
 
-function initResult(pageNum: number) {
+type PageResult = {
+    images: SimplePDFImageItem[]
+    tokens: AssembledToken[]
+    text: SimplePDFTextItem[]
+    table: ParsedTable[]
+    pageNum: number
+}
+
+function initResult() {
     if (fs.existsSync(RESULT_DIR)) {
         fs.rmSync(RESULT_DIR, { recursive: true, force: true })
     }
@@ -52,31 +59,24 @@ function initResult(pageNum: number) {
     fs.mkdirSync(TOKEN_DIR, { recursive: true })
     fs.mkdirSync(TEXT_DIR, { recursive: true })
     fs.mkdirSync(TABLE_DIR, { recursive: true })
-    fs.mkdirSync(join(IMAGES_DIR, `page_${pageNum}`), { recursive: true }) 
+}
+
+function initPageDirs(pageNum: number) {
+    fs.mkdirSync(join(IMAGES_DIR, `page_${pageNum}`), { recursive: true })
     fs.mkdirSync(join(TOKEN_DIR, `page_${pageNum}`), { recursive: true })
     fs.mkdirSync(join(TEXT_DIR, `page_${pageNum}`), { recursive: true })
     fs.mkdirSync(join(TABLE_DIR, `page_${pageNum}`), { recursive: true })
 }
 
-export function createResult({ 
-    images, 
-    tokens, 
-    text, 
-    table, 
-    pageNum 
-}: {
-    images: SimplePDFImageItem[], 
-    tokens: AssembledToken[], 
-    text: SimplePDFTextItem[],
-    table: ParsedTable[], 
-    pageNum: number
-}) {
-    initResult(pageNum);
-    for (const image of images) {
-        saveImage(image, pageNum);
+export function createResult(pages: PageResult[]) {
+    initResult()
+    for (const { images, tokens, text, table, pageNum } of pages) {
+        initPageDirs(pageNum)
+        for (const image of images) {
+            saveImage(image, pageNum)
+        }
+        saveAssembledTokenToJSON(tokens, pageNum)
+        saveTextItemsToJSON(text, pageNum)
+        saveParsedTablesToJSON(table, pageNum)
     }
-    saveAssembledTokenToJSON(tokens, pageNum);
-    saveTextItemsToJSON(text, pageNum);
-    saveParsedTablesToJSON(table, pageNum);
-    terminateWorker();
 }

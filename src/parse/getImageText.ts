@@ -9,6 +9,7 @@ let workerInstance: Worker | null = null
 async function getWorker(): Promise<Worker> {
   if (!workerInstance) {
     workerInstance = await Tesseract.createWorker('kor')
+    await workerInstance.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_WORD })
   }
   return workerInstance
 }
@@ -35,17 +36,15 @@ export async function getImageText(imgData: PdfjsImageData): Promise<string | nu
 
   const worker = await getWorker()
 
-  // PSM 6 먼저
-  await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_WORD })
-  const result1 = await worker.recognize(buffer)
-  const text1 = result1.data.text.trim()
-  if (text1) return text1
+  const timeout = (ms: number) => new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('OCR timeout')), ms)
+  )
 
-//   // PSM 10 fallback (쉼표, 단일 문자)
-//   await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_CHAR })
-//   const result2 = await worker.recognize(buffer)
-//   const text2 = result2.data.text.trim()
-//   if (text2) return text2
-
-  return null
+  try {
+    const result = await Promise.race([worker.recognize(buffer), timeout(5000)])
+    const text = result.data.text.trim()
+    return text || null
+  } catch {
+    return null
+  }
 }
