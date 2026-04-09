@@ -1,6 +1,8 @@
 import { OPS, type PDFDocumentProxy } from "pdfjs-dist";
-import type { SimplePDFImageItem } from "./types.js";
+import type { PdfjsImageData, SimplePDFImageItem } from "./types.js";
 import { transformTopDownY } from "./utils.js";
+import Tesseract from 'tesseract.js'
+import { getImageText } from "./getImageText.js";
 
 type Matrix = [number, number, number, number, number, number];
 
@@ -34,6 +36,8 @@ export default async function getPDFImage(pdf: PDFDocumentProxy, pageNum: number
     const transformStack: Matrix[] = [];
     let currentTransform: Matrix = [1, 0, 0, 1, 0, 0]; // identity matrix
 
+    console.log('이미지 아이템 추출 시작...');
+
     for (let i = 0; i < operatorList.fnArray.length; i++) {
         const fn = operatorList.fnArray[i];
         const args = operatorList.argsArray[i];
@@ -47,7 +51,10 @@ export default async function getPDFImage(pdf: PDFDocumentProxy, pageNum: number
             currentTransform = multiplyMatrix(currentTransform, args as Matrix);
         } else if (fn === OPS.paintImageXObject) {
             const imageName = args?.[0] as string;
-            const data = await getObjAsync(page, imageName);
+            const data = await getObjAsync(page, imageName) as PdfjsImageData;
+
+            const imageText = await getImageText(data);
+            console.log(`이미지 ${imageName} 텍스트:`, imageText);
 
             // PDF transform 행렬: [a, b, c, d, e, f]
             // 이미지의 경우 보통 [width, 0, 0, height, x, y]
@@ -61,11 +68,14 @@ export default async function getPDFImage(pdf: PDFDocumentProxy, pageNum: number
                 width: Math.abs(a),
                 height: Math.abs(d),
                 data,
+                text: imageText,
             });
         }
     }
+
+    console.log('이미지 아이템 추출 완료.');
                                                                                                                                                                                       
-    console.log(`페이지 ${pageNum}의 이미지 아이템:`, results);
+    // console.log(`페이지 ${pageNum}의 이미지 아이템:`, results);
     console.log(`페이지 ${pageNum}의 이미지 아이템 수: ${results.length}`);
 
     return results;

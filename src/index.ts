@@ -13,7 +13,7 @@ const buffer = fs.readFileSync(join(__dirname, './pdf-files/2026년도+4월+16�
 
 const pdf = await getPDF(buffer)
 
-const pageNum = 1
+const pageNum = 2
 
 if (pdf) {
     const textItems: SimplePDFTextItem[] = await getPDFTextContent(pdf, pageNum)

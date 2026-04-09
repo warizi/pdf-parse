@@ -10,9 +10,17 @@ export interface SimplePDFTextItem {
 
 export interface SimplePDFImageItem {
     name: string;   // 이미지 객체 이름 (img_p0_1 등)
+    text?: string | null;   // 이미지 주변 텍스트 (선택적)
     data: unknown;  // pdfjs 이미지 객체
     width: number;  // 이미지 너비
     height: number; // 이미지 높이
     x: number;      // 이미지 x 좌표
     y: number;      // 이미지 y 좌표
+}
+
+export type PdfjsImageData = {
+    width: number
+    height: number
+    kind: number
+    data: Uint8ClampedArray
 }
