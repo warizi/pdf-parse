@@ -24,3 +24,10 @@ export type PdfjsImageData = {
     kind: number
     data: Uint8ClampedArray
 }
+
+export type AssembledToken = {
+    text: string   // 조합된 텍스트
+    x: number      // 시작 x
+    y: number      // y (같은 줄 기준)
+    width: number  // 전체 너비
+}

@@ -6,6 +6,7 @@ import getPDFTextContent from './parse/getPDFTextContent.js'
 import type { SimplePDFTextItem } from './parse/types.js'
 import getPDFImage from './parse/getPDFImage.js'
 import { createResult } from './parse/createResult.js'
+import { assembleTextTokens } from './parse/utils.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 // PDF 파일을 읽어서 buffer로 변환
@@ -18,6 +19,8 @@ const pageNum = 2
 if (pdf) {
     const textItems: SimplePDFTextItem[] = await getPDFTextContent(pdf, pageNum)
     const image = await getPDFImage(pdf, pageNum)
+    const textTokens = assembleTextTokens(image)
+    console.log('이미지 테이블 텍스트 토큰:', textTokens)
 
     createResult(image)
 } else {

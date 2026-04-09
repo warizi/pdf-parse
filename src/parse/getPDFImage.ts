@@ -54,7 +54,7 @@ export default async function getPDFImage(pdf: PDFDocumentProxy, pageNum: number
             const data = await getObjAsync(page, imageName) as PdfjsImageData;
 
             const imageText = await getImageText(data);
-            console.log(`이미지 ${imageName} 텍스트:`, imageText);
+            // console.log(`이미지 ${imageName} 텍스트:`, imageText);
 
             // PDF transform 행렬: [a, b, c, d, e, f]
             // 이미지의 경우 보통 [width, 0, 0, height, x, y]
@@ -75,7 +75,7 @@ export default async function getPDFImage(pdf: PDFDocumentProxy, pageNum: number
 
     console.log('이미지 아이템 추출 완료.');
                                                                                                                                                                                       
-    // console.log(`페이지 ${pageNum}의 이미지 아이템:`, results);
+    console.log(`페이지 ${pageNum}의 이미지 아이템:`, results);
     console.log(`페이지 ${pageNum}의 이미지 아이템 수: ${results.length}`);
 
     return results;
