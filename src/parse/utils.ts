@@ -1,5 +1,5 @@
 import { ImageKind } from "./consts.js";
-import type { AssembledToken, PdfjsImageData, SimplePDFImageItem } from "./types.js";
+import type { AssembledToken, PdfjsImageData, SimplePDFImageItem, SimplePDFTextItem } from "./types.js";
 
 export function transformTopDownY(viewportHeight: number, y: number): number{
     return viewportHeight - y;
@@ -109,6 +109,85 @@ export function assembleTextTokens(items: SimplePDFImageItem[]): AssembledToken[
         }
 
         tokens.push({ text: currentText, x: startX, y: lineY, width: endX - startX })
+    }
+
+    return tokens.sort((a, b) => a.y - b.y || a.x - b.x)
+}
+
+/**
+ * 텍스트 아이템에서 헤더를 감지해 AssembledToken으로 변환.
+ * 이미지 기반 토큰이 없는 PDF(헤더가 텍스트인 경우)에서 폴백으로 사용.
+ *
+ * 전략: 본문 텍스트의 최빈 높이보다 큰 텍스트 아이템을 헤더로 간주.
+ */
+export function assembleTextHeaderTokens(textItems: SimplePDFTextItem[]): AssembledToken[] {
+    if (textItems.length === 0) return []
+
+    // 최빈 높이 계산 (= 본문 텍스트 높이)
+    const heightCounts = new Map<number, number>()
+    for (const item of textItems) {
+        const h = Math.round(item.height * 10) / 10
+        heightCounts.set(h, (heightCounts.get(h) ?? 0) + 1)
+    }
+    let modeHeight = 0, maxCount = 0
+    for (const [h, cnt] of heightCounts) {
+        if (cnt > maxCount) { maxCount = cnt; modeHeight = h }
+    }
+
+    // 시행일 패턴 (예: "2023년 5월 16일 시행") — 섹션 헤더 아님
+    const datePattern = /\d{4}년.+시행/
+
+    // 본문보다 10% 이상 크고, 지나치게 크지 않은 항목 = 헤더 후보
+    const headerItems = textItems.filter(item =>
+        item.height > modeHeight * 1.1 &&
+        item.height < modeHeight * 4 &&
+        item.string.trim().length > 0 &&
+        !datePattern.test(item.string)
+    )
+
+    if (headerItems.length === 0) return []
+
+    const Y_TOLERANCE = 2
+    const lines: SimplePDFTextItem[][] = []
+    for (const item of headerItems) {
+        const existing = lines.find(line => Math.abs(line[0]!.y - item.y) <= Y_TOLERANCE)
+        if (existing) {
+            existing.push(item)
+        } else {
+            lines.push([item])
+        }
+    }
+
+    const X_GAP_THRESHOLD = 20  // 헤더 간 최소 구분 간격 (pt)
+
+    const tokens: AssembledToken[] = []
+    for (const line of lines) {
+        const sorted = [...line].sort((a, b) => a.x - b.x)
+
+        let currentText = sorted[0]!.string
+        let startX = sorted[0]!.x
+        const lineY = sorted[0]!.y
+        let endX = sorted[0]!.x + sorted[0]!.width
+
+        for (let i = 1; i < sorted.length; i++) {
+            const cur = sorted[i]!
+            const gap = cur.x - endX
+
+            if (gap >= X_GAP_THRESHOLD) {
+                if (currentText.trim()) {
+                    tokens.push({ text: currentText.trim(), x: startX, y: lineY, width: endX - startX })
+                }
+                currentText = cur.string
+                startX = cur.x
+            } else {
+                currentText += cur.string
+            }
+            endX = cur.x + cur.width
+        }
+
+        if (currentText.trim()) {
+            tokens.push({ text: currentText.trim(), x: startX, y: lineY, width: endX - startX })
+        }
     }
 
     return tokens.sort((a, b) => a.y - b.y || a.x - b.x)

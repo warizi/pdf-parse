@@ -6,7 +6,7 @@ import getPDFTextContent from './parse/getPDFTextContent.js'
 import type { SimplePDFTextItem } from './parse/types.js'
 import getPDFImage from './parse/getPDFImage.js'
 import { createResult } from './parse/createResult.js'
-import { assembleTextTokens } from './parse/utils.js'
+import { assembleTextTokens, assembleTextHeaderTokens } from './parse/utils.js'
 import { parseTable } from './parse/parseTable.js'
 import { terminateWorker } from './parse/getImageText.js'
 import { convert } from '@opendataloader/pdf';
@@ -29,7 +29,8 @@ if (pdf) {
         ; pageNum <= pdf.numPages; pageNum++) {
         const textItems: SimplePDFTextItem[] = await getPDFTextContent(pdf, pageNum)
         const images = await getPDFImage(pdf, pageNum)
-        const tokens = assembleTextTokens(images)
+        const imageTokens = assembleTextTokens(images)
+        const tokens = imageTokens.length > 0 ? imageTokens : assembleTextHeaderTokens(textItems)
         const table = parseTable(tokens, textItems)
 
         pages.push({ images, tokens, text: textItems, table, pageNum })
