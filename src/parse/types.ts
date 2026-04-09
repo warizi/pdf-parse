@@ -28,6 +28,14 @@ export type PdfjsImageData = {
 export type AssembledToken = {
     text: string   // 조합된 텍스트
     x: number      // 시작 x
-    y: number      // y (같은 줄 기준)
+    y: number      // y (top-down 기준)
     width: number  // 전체 너비
+}
+
+export type ParsedTable = {
+    title: string     // 이미지 토큰 텍스트 (섹션 헤더)
+    x: number
+    y: number
+    headers: string[] // 첫 번째 행
+    rows: string[][]  // 나머지 데이터 행
 }
