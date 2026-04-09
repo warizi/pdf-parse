@@ -1,6 +1,5 @@
 import { getDocument, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
-
-const PDF_SIGNATURE = '%PDF'
+import { PDF_SIGNATURE } from './consts.js'
 
 export default async function getPDF(buffer: Buffer): Promise<PDFDocumentProxy | null> {
     
