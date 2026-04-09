@@ -38,7 +38,10 @@ export function toRGBA(imgData: PdfjsImageData): Uint8ClampedArray {
     return rgba
 }
 
-export function isLikelyTextImage(rgba: Uint8ClampedArray): boolean {
+export function isLikelyTextImage(rgba: Uint8ClampedArray, width: number, height: number): boolean {
+  // 최소 크기 미달 이미지는 텍스트를 담을 수 없음
+  if (width < 60 || height < 30) return false
+
   const pixelCount = rgba.length / 4
   let blackPixels = 0
   let whitePixels = 0
@@ -49,14 +52,14 @@ export function isLikelyTextImage(rgba: Uint8ClampedArray): boolean {
     const b = rgba[i + 2]!
     const avg = (r + g + b) / 3
 
-    if (avg < 80) blackPixels++        // 어두운 픽셀 (텍스트)
-    else if (avg > 200) whitePixels++  // 밝은 픽셀 (배경)
+    if (avg < 80) blackPixels++
+    else if (avg > 200) whitePixels++
   }
 
   const blackRatio = blackPixels / pixelCount
   const whiteRatio = whitePixels / pixelCount
 
-  // 흑백 픽셀이 전체의 90% 이상이면 텍스트 이미지
+  // 흑백 비율 90% 미만이면 컬러 이미지(그래프, 사진 등)
   return (blackRatio + whiteRatio) > 0.9
 }
 

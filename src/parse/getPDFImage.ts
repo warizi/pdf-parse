@@ -76,7 +76,7 @@ export default async function getPDFImage(pdf: PDFDocumentProxy, pageNum: number
 
     console.log('이미지 아이템 추출 완료.');
                                                                                                                                                                                       
-    // console.log(`페이지 ${pageNum}의 이미지 아이템:`, results);
+    console.log(`페이지 ${pageNum}의 이미지 아이템:`, results);
     console.log(`페이지 ${pageNum}의 이미지 아이템 수: ${results.length}`);
 
     return results;

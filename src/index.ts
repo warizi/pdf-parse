@@ -9,13 +9,14 @@ import { createResult } from './parse/createResult.js'
 import { assembleTextTokens } from './parse/utils.js'
 import { parseTable } from './parse/parseTable.js'
 import { terminateWorker } from './parse/getImageText.js'
+import { convert } from '@opendataloader/pdf';
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PDF1 = '2026년도+4월+16일+시행+전기요금표(종합).pdf';
 const PDF2 = '23.05.16 시행 전기요금표_종합.pdf';
 const PDF3 = '2024년도+1월+1일+시행+전기요금표(종합)_출력용.pdf'
 // PDF 파일을 읽어서 buffer로 변환
-const buffer = fs.readFileSync(join(__dirname, `./pdf-files/${PDF3}`))
+const buffer = fs.readFileSync(join(__dirname, `./pdf-files/${PDF2}`))
 
 const pdf = await getPDF(buffer)
 
@@ -39,3 +40,8 @@ if (pdf) {
 } else {
     console.error('PDF 파일을 불러오는 데 실패했습니다.')
 }
+
+await convert([join(__dirname, `./pdf-files/${PDF1}`), join(__dirname, `./pdf-files/${PDF2}`)], {
+  outputDir: 'output/',
+  format: 'markdown,json'
+});

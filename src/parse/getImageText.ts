@@ -28,7 +28,7 @@ export async function getImageText(imgData: PdfjsImageData): Promise<string | nu
   const { width, height } = imgData
   const rgba = toRGBA(imgData)
 
-  if (!isLikelyTextImage(rgba)) return null
+  if (!isLikelyTextImage(rgba, width, height)) return null
 
   const canvas = createCanvas(width, height)
   const ctx = canvas.getContext('2d')
