@@ -9,7 +9,10 @@ let workerInstance: Worker | null = null
 async function getWorker(): Promise<Worker> {
   if (!workerInstance) {
     workerInstance = await Tesseract.createWorker('kor')
-    await workerInstance.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_WORD })
+    await workerInstance.setParameters({
+      tessedit_pageseg_mode: PSM.SINGLE_WORD,
+      debug_file: '/dev/null',
+    })
   }
   return workerInstance
 }
