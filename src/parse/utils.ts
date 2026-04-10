@@ -190,5 +190,22 @@ export function assembleTextHeaderTokens(textItems: SimplePDFTextItem[]): Assemb
         }
     }
 
-    return tokens.sort((a, b) => a.y - b.y || a.x - b.x)
+    const sorted = tokens.sort((a, b) => a.y - b.y || a.x - b.x)
+
+    // 노이즈 필터: | text | 형식, 전화번호 패턴 제거
+    const noisePattern = /^\|.*\|$|^국번없이/
+    const filtered = sorted.filter(t => !noisePattern.test(t.text))
+
+    // 중복 제거: 동일 텍스트는 첫 번째 등장만 유지
+    // 포함 관계: 짧은 것이 긴 것의 부분 문자열이면 짧은 것 제거
+    const deduped: AssembledToken[] = []
+    for (const token of filtered) {
+        const isDuplicate = deduped.some(e => e.text === token.text)
+        const isSubstring = deduped.some(e => e.text.includes(token.text))
+        if (!isDuplicate && !isSubstring) {
+            deduped.push(token)
+        }
+    }
+
+    return deduped
 }

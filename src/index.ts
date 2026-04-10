@@ -20,8 +20,6 @@ const buffer = fs.readFileSync(join(__dirname, `./pdf-files/${PDF2}`))
 
 const pdf = await getPDF(buffer)
 
-const pageNum = 2
-
 if (pdf) {
     const pages = []
 
@@ -41,8 +39,3 @@ if (pdf) {
 } else {
     console.error('PDF 파일을 불러오는 데 실패했습니다.')
 }
-
-await convert([join(__dirname, `./pdf-files/${PDF1}`), join(__dirname, `./pdf-files/${PDF2}`)], {
-  outputDir: 'output/',
-  format: 'markdown,json'
-});

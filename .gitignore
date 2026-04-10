@@ -2,7 +2,7 @@
 node_modules/
 
 # pdf files
-*.pdf
+# *.pdf
 
 # claude
 docs/
@@ -10,3 +10,5 @@ docs/
 # run output
 result/
 output/
+
+.claude/

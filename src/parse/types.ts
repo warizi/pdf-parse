@@ -33,9 +33,8 @@ export type AssembledToken = {
 }
 
 export type ParsedTable = {
-    title: string     // 이미지 토큰 텍스트 (섹션 헤더)
+    title: string
     x: number
     y: number
-    headers: string[] // 첫 번째 행
-    rows: string[][]  // 나머지 데이터 행
+    textItems: SimplePDFTextItem[]
 }
